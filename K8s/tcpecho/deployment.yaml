@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tcpecho
+  labels:
+    app: tcpecho
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tcpecho
+  template:
+    metadata:
+      labels:
+        app: tcpecho
+    spec:
+      containers:
+      - name: tcpecho
+        image: venilnoronha/tcp-echo-server:latest
+        ports:
+        - containerPort: 9000
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: tcpecho
+spec:
+  selector:
+    app.kubernetes.io/name: tcpecho
+  ports:
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+      nodePort: 30001
+  type: NodePort
