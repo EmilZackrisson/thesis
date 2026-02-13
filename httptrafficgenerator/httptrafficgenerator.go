@@ -26,8 +26,7 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 }
 
 // packet_total_size only has an effect if bigger than 184
-func sendPostRequest(packet_total_size int) {
-	url := "http://10.10.0.141:3002"
+func sendPostRequest(packet_total_size int, dest_url string) {
 
 	// adjusted_size = total_size - http headers (found with wireshark)
 	adjusted_size := packet_total_size - 184
@@ -39,7 +38,7 @@ func sendPostRequest(packet_total_size int) {
 		fmt.Println("Error while generating bytes!")
 		panic(err)
 	}
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", dest_url, bytes.NewBuffer(body))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -62,10 +61,10 @@ func randIntInclusive(min, max int) int {
 // sendHttpRequests sends `num` POSTs. Packet size and time between
 // packets are chosen uniformly between the provided min/max ranges.
 // Sizes are interpreted as total packet size (headers included like before).
-func sendHttpRequests(num, minSize, maxSize, minIntervalMs, maxIntervalMs int) {
+func sendHttpRequests(num, minSize, maxSize, minIntervalMs, maxIntervalMs int, dest_url string) {
 	for i := 0; i < num; i++ {
 		size := randIntInclusive(minSize, maxSize)
-		sendPostRequest(size)
+		sendPostRequest(size, dest_url)
 
 		if i == num-1 {
 			break
@@ -85,7 +84,7 @@ func main() {
 
 	// Get packet count
 	if len(argsWithoutProg) < 1 {
-		log.Fatal("usage: httptrafficgenerator <packet_count> [min_size max_size min_interval_ms max_interval_ms]")
+		log.Fatal("usage: httptrafficgenerator <packet_count> [min_size max_size min_interval_ms max_interval_ms] dest_url")
 	}
 
 	packet_count, err := strconv.Atoi(argsWithoutProg[0])
@@ -112,6 +111,11 @@ func main() {
 		}
 	}
 
+	dest_url := argsWithoutProg[5]
+	if dest_url != "" {
+		log.Fatal("dest_url must not be empty")
+	}
+
 	// Ensure ranges are sane: swap if needed
 	if minSize > maxSize {
 		minSize, maxSize = maxSize, minSize
@@ -123,5 +127,5 @@ func main() {
 	// Create a local RNG instead of calling math/rand.Seed (deprecated)
 	rng = mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
 
-	sendHttpRequests(packet_count, minSize, maxSize, minIntervalMs, maxIntervalMs)
+	sendHttpRequests(packet_count, minSize, maxSize, minIntervalMs, maxIntervalMs, dest_url)
 }
