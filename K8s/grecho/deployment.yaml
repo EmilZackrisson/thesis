@@ -29,7 +29,7 @@ metadata:
   name: grecho
 spec:
   selector:
-    app.kubernetes.io/name: grecho
+    app: grecho
   ports:
     - protocol: TCP
       port: 80
