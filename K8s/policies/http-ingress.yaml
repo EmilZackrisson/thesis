@@ -4,12 +4,14 @@ metadata:
   name: allow-http-post
   namespace: default
 spec:
-  selector: app == "grecho"
+  podSelector:
+    matchLabels:
+      app: grecho
   types:
     - Ingress
   ingress:
     - action: Allow
       http:
-        methods: ["POST"]
+        methods: ["POST", "GET"]
         paths:
-          - exact: "/"
+          - prefix: "/"

@@ -4,7 +4,7 @@ metadata:
   name: istio-with-dikastes
   namespace: istio-system
 spec:
-  profile: minimal  # or 'default' if you need gateways
+  profile: minimal # or 'default' if you need gateways
 
   values:
     sidecarInjectorWebhook:
@@ -21,6 +21,7 @@ spec:
               - /var/run/dikastes/dikastes.sock
               - -d
               - /var/run/felix/nodeagent/socket
+              - --debug
               securityContext:
                 allowPrivilegeEscalation: false
                 runAsGroup: 999
@@ -70,6 +71,7 @@ spec:
               - /var/run/dikastes/dikastes.sock
               - -d
               - /var/run/felix/nodeagent/socket
+              - --debug
               securityContext:
                 allowPrivilegeEscalation: false
                 runAsGroup: 0
