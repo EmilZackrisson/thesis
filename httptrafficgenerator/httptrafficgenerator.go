@@ -39,6 +39,12 @@ func sendPostRequest(packet_total_size int, dest_url string) {
 		panic(err)
 	}
 	req, err := http.NewRequest("POST", dest_url, bytes.NewBuffer(body))
+
+	// Add headers for measurement point
+	req.Header.Add("exp_id", os.Getenv("EXPID"))
+	req.Header.Add("run_id", os.Getenv("RUNID"))
+	req.Header.Add("key_id", os.Getenv("KEYID"))
+
 	if err != nil {
 		fmt.Println(err)
 	}
