@@ -67,11 +67,11 @@ func randIntInclusive(min, max int) int {
 
 // sendHttpRequests sends `num` POSTs. Packet size and time between
 // packets are chosen uniformly between the provided min/max ranges.
-// Sizes are interpreted as total packet size (headers included like before).
+// Sizes are interpreted as total packet size.
 func sendHttpRequests(num, minSize, maxSize, minIntervalMs, maxIntervalMs int, dest_url string) {
 	for i := 0; i < num; i++ {
 		size := randIntInclusive(minSize, maxSize)
-		sendPostRequest(size, dest_url, i)
+		go sendPostRequest(size, dest_url, i)
 
 		if i == num-1 {
 			break
@@ -131,7 +131,6 @@ func main() {
 		minIntervalMs, maxIntervalMs = maxIntervalMs, minIntervalMs
 	}
 
-	// Create a local RNG instead of calling math/rand.Seed (deprecated)
 	rng = mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
 
 	sendHttpRequests(packet_count, minSize, maxSize, minIntervalMs, maxIntervalMs, dest_url)
