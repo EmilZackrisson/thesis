@@ -1,0 +1,59 @@
+- name: Create a single-node minikube cluster with calico operator
+  hosts: k8s_server
+  vars:
+    pod_network_cidr: 192.168.0.0/16
+    calico_version: v3.31.3
+    data_plane: iptables # iptables or ebpf
+  tasks:
+    - name: Get latest Kubernetes patch version
+      ansible.builtin.uri:
+        url: "https://dl.k8s.io/release/stable-{{ k8s_minor_version }}.txt"
+        return_content: true
+      register: k8s_version_response
+    - name: Save latest Kubernetes version
+      ansible.builtin.set_fact:
+        k8s_latest_version: "{{ k8s_version_response.content | trim }}"
+    - name: Create cluster
+      ansible.builtin.command: minikube start --driver=docker --cni=false --network-plugin=cni --extra-config=kubeadm.pod-network-cidr={{ pod_network_cidr }} --subnet=172.16.0.0/24 --kubernetes-version={{ k8s_latest_version }}
+      register: nodes_ready
+      changed_when: false
+    - name: Debug minikube creation
+      ansible.builtin.debug: var=nodes_ready.stdout_lines
+    - name: Install Operator CRDs
+      ansible.builtin.command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/operator-crds.yaml
+      changed_when: false
+    - name: Install Operator
+      ansible.builtin.command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml
+      changed_when: false
+    # Install the wanted data plane specified in variable
+    - name: Install CRDs (iptables)
+      ansible.builtin.command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/custom-resources.yaml
+      when: data_plane == "iptables"
+      changed_when: false
+    - name: Install CRDs (eBPF)
+      ansible.builtin.command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/custom-resources-bpf.yaml
+      when: data_plane == "ebpf"
+      changed_when: false
+    - name: Wait until all TigeraStatus resources are fully ready
+      ansible.builtin.shell: |
+        kubectl get tigerastatus -o json | jq -e '
+          .items
+          | length > 0
+          and all(
+            .[];
+            . as $ts
+            | ($ts.status.conditions // []) as $conds
+            | (
+                ($conds | map(select(.type=="Available"))   | length == 1 and .[0].status == "True")
+                and
+                ($conds | map(select(.type=="Degraded"))    | length == 1 and .[0].status == "False")
+                and
+                ($conds | map(select(.type=="Progressing")) | length == 1 and .[0].status == "False")
+              )
+          )
+        '
+      register: tigerastatus_check
+      retries: 60
+      delay: 10
+      until: tigerastatus_check.rc == 0
+      changed_when: false

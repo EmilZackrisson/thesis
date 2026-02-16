@@ -1,0 +1,104 @@
+# - name: Setup KVM
+#   hosts: k8s_server
+#   gather_facts: true
+#   tasks:
+#     - name: Detect CPU vendor
+#       ansible.builtin.set_fact:
+#         cpu_vendor: "{{ 'intel' if 'GenuineIntel' in ansible_facts.processor else 'amd' }}"
+#     - name: Check correct KVM module
+#       ansible.builtin.command: "modprobe -n kvm_{{ cpu_vendor }}"
+#       register: kvm_module_check
+#       changed_when: false
+#       failed_when: kvm_module_check.rc != 0
+#     - name: Install packages
+#       ansible.builtin.apt:
+#         pkg:
+#           - qemu-kvm
+#           - libvirt-daemon-system
+#           - libvirt-clients
+#           - bridge-utils
+#           - docker.io
+#         state: latest
+#         update_cache: true
+#       become: true
+#     - name: Add existing user '{{ ansible_user_id }}' to kvm groups
+#       ansible.builtin.user:
+#         name: "{{ ansible_user_id }}"
+#         groups: libvirt,kvm
+#         append: true
+#       become: true
+
+- name: Install docker
+  hosts: k8s_server
+  gather_facts: true
+  tasks:
+    - name: Install packages
+      ansible.builtin.apt:
+        pkg:
+          - docker.io
+        state: latest
+        update_cache: true
+      become: true
+    - name: Add existing user '{{ ansible_user_id }}' to docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user_id }}"
+        groups: docker
+        append: true
+      become: true
+
+- name: Install minikube
+  hosts: k8s_server
+  gather_facts: true
+  tasks:
+    - name: Check if minikube is already installed
+      ansible.builtin.command: minikube version
+      register: minikube_installed
+      ignore_errors: true
+    # Stop if minikube already installed
+    - name: End play if minikube is installed already
+      ansible.builtin.meta: end_play
+      when: minikube_installed.rc == 0
+    - name: Download minikube
+      ansible.builtin.get_url:
+        url: https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
+        dest: /home/{{ ansible_user_id }}/minikube_latest_amd64.deb
+    - name: Install minikube deb
+      ansible.builtin.apt:
+        deb: /home/{{ ansible_user_id }}/minikube_latest_amd64.deb
+      become: true
+    - name: Set docker to default driver
+      ansible.builtin.command: minikube config set driver docker
+      changed_when: false
+
+- name: Install kubectl
+  hosts: k8s_server
+  tasks:
+    - name: Get latest Kubernetes patch version
+      ansible.builtin.uri:
+        url: "https://dl.k8s.io/release/stable-{{ k8s_minor_version }}.txt"
+        return_content: true
+      register: k8s_version_response
+    - name: Save latest Kubernetes version
+      ansible.builtin.set_fact:
+        k8s_latest_version: "{{ k8s_version_response.content | trim }}"
+    - name: Download kubectl
+      ansible.builtin.get_url:
+        url: https://dl.k8s.io/release/{{ k8s_latest_version }}/bin/linux/amd64/kubectl
+        dest: /home/{{ ansible_user_id }}/kubectl
+    - name: Download checksum
+      ansible.builtin.get_url:
+        url: https://dl.k8s.io/release/{{ k8s_latest_version }}/bin/linux/amd64/kubectl.sha256
+        dest: /home/{{ ansible_user_id }}/kubectl.sha256
+    - name: Validate checksum
+      ansible.builtin.shell: echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+    - name: Install kubectl
+      ansible.builtin.command: sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+      become: true
+    - name: Clean up kubectl
+      ansible.builtin.file:
+        state: absent
+        path: /home/{{ ansible_user_id }}/kubectl
+    - name: Clean up kubectl.sha256
+      ansible.builtin.file:
+        state: absent
+        path: /home/{{ ansible_user_id }}/kubectl.sha256
