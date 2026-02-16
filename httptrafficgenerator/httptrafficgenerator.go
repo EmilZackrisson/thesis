@@ -26,7 +26,7 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 }
 
 // packet_total_size only has an effect if bigger than 184
-func sendPostRequest(packet_total_size int, dest_url string) {
+func sendPostRequest(packet_total_size int, dest_url string, sequence_number int) {
 
 	// adjusted_size = total_size - http headers (found with wireshark)
 	adjusted_size := packet_total_size - 184
@@ -44,6 +44,7 @@ func sendPostRequest(packet_total_size int, dest_url string) {
 	req.Header.Add("exp_id", os.Getenv("EXPID"))
 	req.Header.Add("run_id", os.Getenv("RUNID"))
 	req.Header.Add("key_id", os.Getenv("KEYID"))
+	req.Header.Add("counter", strconv.Itoa(sequence_number))
 
 	if err != nil {
 		fmt.Println(err)
@@ -70,7 +71,7 @@ func randIntInclusive(min, max int) int {
 func sendHttpRequests(num, minSize, maxSize, minIntervalMs, maxIntervalMs int, dest_url string) {
 	for i := 0; i < num; i++ {
 		size := randIntInclusive(minSize, maxSize)
-		sendPostRequest(size, dest_url)
+		sendPostRequest(size, dest_url, i)
 
 		if i == num-1 {
 			break

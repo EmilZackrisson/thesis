@@ -1,0 +1,41 @@
+apiVersion: projectcalico.org/v3
+kind: NetworkPolicy
+metadata:
+  name: allow-tcp-9000-in
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: tcpecho
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.200.200.0/24
+      ports:
+        - protocol: TCP
+          port: 9000
+---
+apiVersion: projectcalico.org/v3
+kind: NetworkPolicy
+metadata:
+  name: allow-tcp-8001-in
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: grecho
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.200.200.0/24
+      ports:
+        - protocol: TCP
+          port: 8001
