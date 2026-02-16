@@ -20,7 +20,8 @@ spec:
               - -l
               - /var/run/dikastes/dikastes.sock
               - -d
-              - /var/run/felix/nodeagent/socket
+              # - /var/run/felix/nodeagent/socket
+              - /var/run/nodeagent
               - --debug
               securityContext:
                 allowPrivilegeEscalation: false
