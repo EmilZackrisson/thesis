@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -36,7 +37,7 @@ func sendPostRequest(packet_total_size int, dest_url string, sequence_number int
 	body, err := GenerateRandomBytes(adjusted_size)
 	if err != nil {
 		fmt.Println("Error while generating bytes!")
-		panic(err)
+		log.Fatal(err)
 	}
 	req, err := http.NewRequest("POST", dest_url, bytes.NewBuffer(body))
 
@@ -53,8 +54,13 @@ func sendPostRequest(packet_total_size int, dest_url string, sequence_number int
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
+
+	if resp.StatusCode != 200 {
+		log.Fatal("Status code not 200!!")
+	}
+
 	defer resp.Body.Close()
 }
 
@@ -69,24 +75,27 @@ func randIntInclusive(min, max int) int {
 // packets are chosen uniformly between the provided min/max ranges.
 // Sizes are interpreted as total packet size.
 func sendHttpRequests(num, minSize, maxSize, minIntervalMs, maxIntervalMs int, dest_url string) {
+	var wg sync.WaitGroup
 	for i := 0; i < num; i++ {
 		size := randIntInclusive(minSize, maxSize)
-		go sendPostRequest(size, dest_url, i)
+		wg.Add(1)
+		go func(seq int, s int) {
+			defer wg.Done()
+			sendPostRequest(s, dest_url, seq)
+		}(i, size)
 
-		if i == num-1 {
-			break
-		}
-
-		// sleep a uniformly-chosen interval (milliseconds)
-		interval := randIntInclusive(minIntervalMs, maxIntervalMs)
-		if interval > 0 {
-			time.Sleep(time.Duration(interval) * time.Millisecond)
+		if i < num-1 {
+			// sleep a uniformly-chosen interval (milliseconds)
+			interval := randIntInclusive(minIntervalMs, maxIntervalMs)
+			if interval > 0 {
+				time.Sleep(time.Duration(interval) * time.Millisecond)
+			}
 		}
 	}
+	wg.Wait()
 }
 
 func main() {
-	fmt.Println("Hello World!")
 	argsWithoutProg := os.Args[1:]
 
 	// Get packet count
@@ -123,12 +132,12 @@ func main() {
 		log.Fatal("dest_url must not be empty")
 	}
 
-	// Ensure ranges are sane: swap if needed
-	if minSize > maxSize {
-		minSize, maxSize = maxSize, minSize
+	if minSize < 0 || maxSize < 0 {
+		log.Fatal("sizes can't be less than 0")
 	}
-	if minIntervalMs > maxIntervalMs {
-		minIntervalMs, maxIntervalMs = maxIntervalMs, minIntervalMs
+
+	if minIntervalMs < 0 || maxIntervalMs < 0 {
+		log.Fatal("interval can't be less than 0")
 	}
 
 	rng = mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
