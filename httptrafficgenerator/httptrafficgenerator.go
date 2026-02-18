@@ -134,4 +134,6 @@ func main() {
 	rng = mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
 
 	sendHttpRequests(packet_count, minSize, maxSize, minIntervalMs, maxIntervalMs, dest_url)
+
+	os.Exit(0)
 }

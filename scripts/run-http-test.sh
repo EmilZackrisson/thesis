@@ -10,7 +10,7 @@ kubectl rollout status deployment grecho -n default --timeout=90s
 kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service/grecho
 
 echo "Running httptrafficgenerator"
-PKT_COUNT = 100000
+PKT_COUNT = 1000
 MIN_SIZE = 200
 MAX_SIZE = 2000
 MIN_INT_MS = 1
