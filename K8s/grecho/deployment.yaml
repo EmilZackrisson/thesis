@@ -12,7 +12,7 @@ spec:
   template:
     metadata:
       annotations:
-        inject.istio.io/templates: sidecar,dikastes
+        inject.istio.io/templates: sidecar,dikastes-gateway
       labels:
         app: grecho
     spec:
@@ -32,6 +32,6 @@ spec:
     app: grecho
   ports:
     - protocol: TCP
-      port: 80
+      port: 8001
       targetPort: 8001
   type: LoadBalancer
