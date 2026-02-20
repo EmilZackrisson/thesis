@@ -4,7 +4,7 @@ kubectl patch installation default --type=merge -p '{"spec": {"flexVolumePath": 
 kubectl patch felixconfiguration default --type merge -p '{"spec":{"bpfConnectTimeLoadBalancing":"Disabled"}}'
 
 # Install Istio
-istioctl install -f https://github.com/EmilZackrisson/thesis/blob/main/K8s/istio-operator-dikastes.yaml -y
+istioctl install -f istio-operator-dikastes.yaml -y
 
 # Configure Istio's Envoy proxies to use Dikastes as an external authorization service.
 kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.3/manifests/alp/istio-app-layer-policy-envoy-v3.yaml

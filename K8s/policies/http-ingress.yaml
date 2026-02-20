@@ -1,15 +1,16 @@
 apiVersion: projectcalico.org/v3
 kind: NetworkPolicy
 metadata:
-  name: allow-http-post
+  name: allow-post-root
   namespace: default
 spec:
   selector: app == "grecho"
-  types:
-    - Ingress
   ingress:
     - action: Allow
+      protocol: TCP
+      destination:
+        ports: [8001]
       http:
         methods: ["POST"]
         paths:
-          - prefix: "/"
+          - exact: /
