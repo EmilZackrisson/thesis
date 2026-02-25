@@ -7,7 +7,7 @@ dataplane=$1
 
 echo "Dataplane selected: $1"
 
-if [ $dataplane != "iptables" ] || [ $dataplane != "ebpf" ]; then
+if [[ "$dataplane" != "iptables" && "$dataplane" != "ebpf" ]]; then
     echo "Dataplane must be iptables or ebpf"
     exit 1
 fi
