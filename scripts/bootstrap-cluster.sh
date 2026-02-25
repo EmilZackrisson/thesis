@@ -13,7 +13,7 @@ if [[ "$dataplane" != "iptables" && "$dataplane" != "ebpf" ]]; then
 fi
 
 echo "Running kubeadm init"
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --criSocket="unix:///var/run/crio/crio.sock"
 
 echo "Copying kubeconfig"
 mkdir -p $HOME/.kube
