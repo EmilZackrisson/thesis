@@ -5,6 +5,7 @@ import (
 	cryptoRand "crypto/rand"
 	"fmt"
 	"log"
+	"math"
 	mathRand "math/rand"
 	"net/http"
 	"os"
@@ -24,6 +25,94 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+// BimodalMixture generates packet sizes using:
+// wSmall at smallSize,
+// wLarge at largeSize,
+// remaining probability from a lognormal distribution.
+type BimodalMixture struct {
+	wSmall    float64
+	wLarge    float64
+	smallSize int
+	largeSize int
+	logMu     float64
+	logSigma  float64
+	rng       *mathRand.Rand
+}
+
+func NewBimodalMixture(
+	wSmall, wLarge float64,
+	smallSize, largeSize int,
+	logMu, logSigma float64,
+	seed int64,
+) *BimodalMixture {
+
+	if wSmall+wLarge > 1.0 {
+		panic("invalid mixture weights")
+	}
+
+	src := mathRand.NewSource(seed)
+	return &BimodalMixture{
+		wSmall:    wSmall,
+		wLarge:    wLarge,
+		smallSize: smallSize,
+		largeSize: largeSize,
+		logMu:     logMu,
+		logSigma:  logSigma,
+		rng:       mathRand.New(src),
+	}
+}
+
+func (b *BimodalMixture) Sample() int {
+	u := b.rng.Float64()
+
+	if u < b.wSmall {
+		return b.smallSize
+	}
+
+	if u < b.wSmall+b.wLarge {
+		return b.largeSize
+	}
+
+	// Lognormal sample
+	normal := b.rng.NormFloat64()
+	lognormal := math.Exp(b.logMu + b.logSigma*normal)
+
+	return int(lognormal)
+}
+
+type TruncatedExponential struct {
+	lambda float64
+	min    float64
+	max    float64
+	rng    *mathRand.Rand
+}
+
+func NewTruncatedExponential(lambda, min, max float64, seed int64) *TruncatedExponential {
+	if lambda <= 0 {
+		panic("lambda must be positive")
+	}
+	if min >= max {
+		panic("min must be < max")
+	}
+
+	src := mathRand.NewSource(seed)
+
+	return &TruncatedExponential{
+		lambda: lambda,
+		min:    min,
+		max:    max,
+		rng:    mathRand.New(src),
+	}
+}
+
+func (t *TruncatedExponential) Sample() float64 {
+	u := t.rng.Float64()
+
+	rangeExp := 1 - math.Exp(-t.lambda*(t.max-t.min))
+
+	return t.min - (1/t.lambda)*math.Log(1-u*rangeExp)
 }
 
 // packet_total_size only has an effect if bigger than 184
@@ -64,20 +153,32 @@ func sendPostRequest(packet_total_size int, dest_url string, sequence_number int
 	defer resp.Body.Close()
 }
 
-func randIntInclusive(min, max int) int {
-	if min >= max {
-		return min
-	}
-	return rng.Intn(max-min+1) + min
-}
-
 // sendHttpRequests sends `num` POSTs. Packet size and time between
 // packets are chosen uniformly between the provided min/max ranges.
 // Sizes are interpreted as total packet size.
-func sendHttpRequests(num, minSize, maxSize, minIntervalMs, maxIntervalMs int, dest_url string) {
+func sendHttpRequests(num, maxSize, minIntervalMs, maxIntervalMs int, dest_url string) {
+	mix := NewBimodalMixture(
+		0.4,  // 40% small packets
+		0.2,  // 20% large packets
+		40,   // small size
+		1500, // large size
+		5.5,  // lognormal mu
+		0.5,  // lognormal sigma
+		time.Now().UnixNano(),
+	)
+
+	exp := NewTruncatedExponential(
+		2.0,                         // lambda
+		float64(minIntervalMs/1000), // 10 ms
+		float64(maxIntervalMs/1000), // 1000 ms
+		time.Now().UnixNano(),
+	)
+
 	var wg sync.WaitGroup
 	for i := 0; i < num; i++ {
-		size := randIntInclusive(minSize, maxSize)
+		// size := randIntInclusive(minSize, maxSize)
+		size := min(mix.Sample(), maxSize) // Limit max size so request does not split into multiple packets
+
 		wg.Add(1)
 		go func(seq int, s int) {
 			defer wg.Done()
@@ -86,7 +187,8 @@ func sendHttpRequests(num, minSize, maxSize, minIntervalMs, maxIntervalMs int, d
 
 		if i < num-1 {
 			// sleep a uniformly-chosen interval (milliseconds)
-			interval := randIntInclusive(minIntervalMs, maxIntervalMs)
+			// interval := randIntInclusive(minIntervalMs, maxIntervalMs)
+			interval := exp.Sample()
 			if interval > 0 {
 				time.Sleep(time.Duration(interval) * time.Millisecond)
 			}
@@ -100,7 +202,7 @@ func main() {
 
 	// Get packet count
 	if len(argsWithoutProg) < 1 {
-		log.Fatal("usage: httptrafficgenerator <packet_count> [min_size max_size min_interval_ms max_interval_ms] dest_url")
+		log.Fatal("usage: httptrafficgenerator <packet_count> <max_size> <min_interval_ms> <max_interval_ms> dest_url")
 	}
 
 	packet_count, err := strconv.Atoi(argsWithoutProg[0])
@@ -109,20 +211,17 @@ func main() {
 	}
 
 	// Defaults: keep previous behavior if optional args not provided.
-	minSize, maxSize := 200, 200
+	maxSize := 200
 	minIntervalMs, maxIntervalMs := 0, 0
 
-	if len(argsWithoutProg) >= 5 {
+	if len(argsWithoutProg) >= 4 {
 		if v, e := strconv.Atoi(argsWithoutProg[1]); e == nil {
-			minSize = v
-		}
-		if v, e := strconv.Atoi(argsWithoutProg[2]); e == nil {
 			maxSize = v
 		}
-		if v, e := strconv.Atoi(argsWithoutProg[3]); e == nil {
+		if v, e := strconv.Atoi(argsWithoutProg[2]); e == nil {
 			minIntervalMs = v
 		}
-		if v, e := strconv.Atoi(argsWithoutProg[4]); e == nil {
+		if v, e := strconv.Atoi(argsWithoutProg[3]); e == nil {
 			maxIntervalMs = v
 		}
 	}
@@ -132,8 +231,12 @@ func main() {
 		log.Fatal("dest_url must not be empty")
 	}
 
-	if minSize < 0 || maxSize < 0 {
+	if maxSize < 0 {
 		log.Fatal("sizes can't be less than 0")
+	}
+
+	if minIntervalMs > maxIntervalMs {
+		log.Fatal("minInterval can't be bigger than maxInterval")
 	}
 
 	if minIntervalMs < 0 || maxIntervalMs < 0 {
@@ -142,7 +245,7 @@ func main() {
 
 	rng = mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
 
-	sendHttpRequests(packet_count, minSize, maxSize, minIntervalMs, maxIntervalMs, dest_url)
+	sendHttpRequests(packet_count, maxSize, minIntervalMs, maxIntervalMs, dest_url)
 
 	os.Exit(0)
 }

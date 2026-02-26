@@ -13,7 +13,7 @@ if [[ "$dataplane" != "iptables" && "$dataplane" != "ebpf" ]]; then
 fi
 
 echo "Running kubeadm init"
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --criSocket="unix:///var/run/crio/crio.sock"
+sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --cri-socket="unix:///var/run/crio/crio.sock"
 
 echo "Copying kubeconfig"
 mkdir -p $HOME/.kube
@@ -67,6 +67,3 @@ done
 
 echo "ERROR: TigeraStatus resources did not become ready in time."
 exit 1
-
-echo "Installing prometheus stack"
-helm install monitoring prometheus-community/kube-prometheus-stack
