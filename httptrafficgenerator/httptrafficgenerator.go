@@ -168,7 +168,7 @@ func sendHttpRequests(num, maxSize, minIntervalMs, maxIntervalMs int, dest_url s
 	)
 
 	exp := NewTruncatedExponential(
-		2.0, // lambda
+		0.01, // Exponential mean formula: mean_ms = 1/λ  =>  λ = 1/mean_ms (target mean ≈ 100 ms)
 		float64(minIntervalMs),
 		float64(maxIntervalMs),
 		time.Now().UnixNano(),
