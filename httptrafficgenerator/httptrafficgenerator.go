@@ -226,7 +226,7 @@ func main() {
 		}
 	}
 
-	dest_url := argsWithoutProg[5]
+	dest_url := argsWithoutProg[4]
 	if dest_url == "" {
 		log.Fatal("dest_url must not be empty")
 	}
