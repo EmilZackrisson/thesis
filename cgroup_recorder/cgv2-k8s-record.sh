@@ -161,14 +161,14 @@ start() {
     CGROUP_LIST="$TMPDIR/cgroups.list"
     discover_cgroups "$NAMESPACE" "$SELECTOR" || exit 1
 
-    # Initialize tar archive (IMPORTANT)
     echo "cgroup v2 recorder" > "$TMPDIR/meta.txt"
     echo "Started: $(date -Is)" >> "$TMPDIR/meta.txt"
     echo "Interval: $INTERVAL" >> "$TMPDIR/meta.txt"
     echo "Namespace: $NAMESPACE" >> "$TMPDIR/meta.txt"
     echo "Selector: $SELECTOR" >> "$TMPDIR/meta.txt"
+    echo -e "\nEnvironment:" >> "$TMPDIR/meta.txt"
+    printenv >> "$TMPDIR/meta.txt"
 
-    #tar -cf "$OUTPUT" -C "$TMPDIR" meta.txt
     mkdir -p $OUTPUT
     cp "$TMPDIR/meta.txt" "$OUTPUT/meta.txt"
 
