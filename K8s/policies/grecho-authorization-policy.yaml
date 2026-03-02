@@ -1,0 +1,13 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: grecho
+  namespace: default
+spec:
+  action: ALLOW
+  rules:
+    - to:
+        - operation:
+            paths: ["/*"]
+            methods: ["POST"]
+            ports: ["8001"]

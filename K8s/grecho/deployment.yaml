@@ -11,8 +11,6 @@ spec:
       app: grecho
   template:
     metadata:
-      annotations:
-        inject.istio.io/templates: sidecar,dikastes-gateway
       labels:
         app: grecho
     spec:
