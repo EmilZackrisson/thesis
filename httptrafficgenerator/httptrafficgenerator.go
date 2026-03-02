@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	cryptoRand "crypto/rand"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -27,59 +29,58 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 	return b, nil
 }
 
-// BimodalMixture generates packet sizes using:
-// wSmall at smallSize,
-// wLarge at largeSize,
-// remaining probability from a lognormal distribution.
-type BimodalMixture struct {
-	wSmall    float64
-	wLarge    float64
-	smallSize int
-	largeSize int
-	logMu     float64
-	logSigma  float64
-	rng       *mathRand.Rand
+const defaultPacketSizesFile = "packet_sizes.txt"
+
+type FilePacketSampler struct {
+	samples []int
+	index   int
 }
 
-func NewBimodalMixture(
-	wSmall, wLarge float64,
-	smallSize, largeSize int,
-	logMu, logSigma float64,
-	seed int64,
-) *BimodalMixture {
+func NewFilePacketSampler(path string) (*FilePacketSampler, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
 
-	if wSmall+wLarge > 1.0 {
-		panic("invalid mixture weights")
+	var samples []int
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		value, convErr := strconv.Atoi(line)
+		if convErr != nil {
+			return nil, fmt.Errorf("invalid packet size %q: %w", line, convErr)
+		}
+		if value < 0 {
+			value = 0
+		}
+		samples = append(samples, value)
 	}
 
-	src := mathRand.NewSource(seed)
-	return &BimodalMixture{
-		wSmall:    wSmall,
-		wLarge:    wLarge,
-		smallSize: smallSize,
-		largeSize: largeSize,
-		logMu:     logMu,
-		logSigma:  logSigma,
-		rng:       mathRand.New(src),
+	if err := scanner.Err(); err != nil {
+		return nil, err
 	}
+
+	if len(samples) == 0 {
+		return nil, fmt.Errorf("no packet sizes found in %s", path)
+	}
+
+	return &FilePacketSampler{samples: samples}, nil
 }
 
-func (b *BimodalMixture) Sample() int {
-	u := b.rng.Float64()
-
-	if u < b.wSmall {
-		return b.smallSize
+func (s *FilePacketSampler) Sample() int {
+	if len(s.samples) == 0 {
+		return 0
 	}
-
-	if u < b.wSmall+b.wLarge {
-		return b.largeSize
+	value := s.samples[s.index]
+	s.index++
+	if s.index >= len(s.samples) {
+		s.index = 0
 	}
-
-	// Lognormal sample
-	normal := b.rng.NormFloat64()
-	lognormal := math.Exp(b.logMu + b.logSigma*normal)
-
-	return int(lognormal)
+	return value
 }
 
 type TruncatedExponential struct {
@@ -157,15 +158,10 @@ func sendPostRequest(packet_total_size int, dest_url string, sequence_number int
 // packets are chosen uniformly between the provided min/max ranges.
 // Sizes are interpreted as total packet size.
 func sendHttpRequests(num, maxSize, minIntervalMs, maxIntervalMs int, dest_url string) {
-	mix := NewBimodalMixture(
-		0.4,  // 40% small packets
-		0.2,  // 20% large packets
-		40,   // small size
-		1500, // large size
-		5.5,  // lognormal mu
-		0.5,  // lognormal sigma
-		time.Now().UnixNano(),
-	)
+	packetSampler, err := NewFilePacketSampler(defaultPacketSizesFile)
+	if err != nil {
+		log.Fatalf("failed to load packet sizes from %s: %v", defaultPacketSizesFile, err)
+	}
 
 	exp := NewTruncatedExponential(
 		0.01, // Exponential mean formula: mean_ms = 1/λ  =>  λ = 1/mean_ms (target mean ≈ 100 ms)
@@ -176,8 +172,7 @@ func sendHttpRequests(num, maxSize, minIntervalMs, maxIntervalMs int, dest_url s
 
 	var wg sync.WaitGroup
 	for i := 0; i < num; i++ {
-		// size := randIntInclusive(minSize, maxSize)
-		size := min(mix.Sample(), maxSize) // Limit max size so request does not split into multiple packets
+		size := min(packetSampler.Sample(), maxSize) // Limit max size so request does not split into multiple packets
 
 		wg.Add(1)
 		go func(seq int, s int) {
@@ -197,7 +192,20 @@ func sendHttpRequests(num, maxSize, minIntervalMs, maxIntervalMs int, dest_url s
 	wg.Wait()
 }
 
+func printPacketSizes() {
+	packetSampler, err := NewFilePacketSampler(defaultPacketSizesFile)
+	if err != nil {
+		log.Fatalf("failed to load packet sizes from %s: %v", defaultPacketSizesFile, err)
+	}
+
+	for i := 1; i < 1000; i++ {
+		fmt.Println(packetSampler.Sample())
+	}
+	os.Exit(0)
+}
+
 func main() {
+	printPacketSizes()
 	argsWithoutProg := os.Args[1:]
 
 	// Get packet count
