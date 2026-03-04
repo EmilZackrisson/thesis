@@ -6,7 +6,6 @@ POLICY_DIRECTION=$3
 
 ISTIO_SIDECAR=$4
 ISTIO_POLICY=$5
-ISTIO_ACCEL=$6
 
 THESIS_REPO_PATH=$7
 
@@ -127,3 +126,20 @@ else
     echo "Invalid Istio policy argument, must be (true, false)"
     exit_and_fail
 fi
+
+# TODO: Start cgroup recorder, wait 5 seconds
+
+# Continue with specific protocol testing script
+if [[ $PROTOCOL = "tcp" ]]; then
+    echo "Running TCP testing script"
+
+    $THESIS_REPO_PATH/scripts/run-tcp-test.sh
+
+elif [[ $PROTOCOL = "http" ]]; then
+    echo "Running HTTP testing script"
+
+    $THESIS_REPO_PATH/scripts/run-http-test.sh
+
+# TODO: Stop cgroup recorder, wait 5 seconds
+
+echo "SUCCESS"
