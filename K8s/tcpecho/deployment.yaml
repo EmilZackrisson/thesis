@@ -15,14 +15,12 @@ spec:
         app: tcpecho
     spec:
       containers:
-      - name: tcpecho
-        image: venilnoronha/tcp-echo-server:latest
-        ports:
-        - containerPort: 9000
-
+        - name: tcpecho
+          image: venilnoronha/tcp-echo-server:latest
+          ports:
+            - containerPort: 9000
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -34,4 +32,4 @@ spec:
     - protocol: TCP
       port: 9000
       targetPort: 9000
-  type: LoadBalancer
+  type: NodePort
