@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: udpecho
-          image: ghcr.io/emilzackrisson/udpecho:latest
+          image: ghcr.io/emilzackrisson/trafficgenerators:latest
           ports:
             - containerPort: 1500
 
