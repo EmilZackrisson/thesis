@@ -35,4 +35,5 @@ spec:
     - protocol: UDP
       port: 1500
       targetPort: 1500
+      nodePort: 30002
   type: NodePort
