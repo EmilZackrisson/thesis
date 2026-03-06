@@ -15,6 +15,8 @@ import (
 
 var rng *mathRand.Rand
 
+var LOG_INTERVAL = 100
+
 func GenerateRandomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := cryptoRand.Read(b)
@@ -28,6 +30,10 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 
 // packet_total_size only has an effect if bigger than 184
 func sendPostRequest(packet_total_size int, dest_url string, sequence_number int) {
+
+	if sequence_number%LOG_INTERVAL == 0 {
+		log.Printf("Sending the %d:th request\n", sequence_number)
+	}
 
 	// adjusted_size = total_size - http headers (found with wireshark)
 	adjusted_size := packet_total_size - 184
@@ -75,6 +81,8 @@ func randIntInclusive(min, max int) int {
 // packets are chosen uniformly between the provided min/max ranges.
 // Sizes are interpreted as total packet size.
 func sendHttpRequests(num, minSize, maxSize, minIntervalMs, maxIntervalMs int, dest_url string) {
+	log.Printf("Sending %d requests to %s with minSize=%d, maxSize=%d, minIntervalMs=%d, maxIntervalMs=%d \n", num, dest_url, minSize, maxSize, minIntervalMs, maxIntervalMs)
+	log.Printf("Will log requests every %d requests\n", LOG_INTERVAL)
 	var wg sync.WaitGroup
 	for i := 0; i < num; i++ {
 		size := randIntInclusive(minSize, maxSize)
@@ -140,7 +148,13 @@ func main() {
 		log.Fatal("interval can't be less than 0")
 	}
 
-	rng = mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
+	if minIntervalMs > maxIntervalMs {
+		log.Fatal("minInterval can't be larger than maxInterval")
+	}
+
+	if minSize > maxSize {
+		log.Fatal("minSize can't be bigger than maxSize")
+	}
 
 	sendHttpRequests(packet_count, minSize, maxSize, minIntervalMs, maxIntervalMs, dest_url)
 
