@@ -17,6 +17,8 @@ spec:
       containers:
         - name: udpecho
           image: ghcr.io/emilzackrisson/trafficgenerators:latest
+          command: ["/bin/udpecho"]
+          args: ["1500"]
           ports:
             - containerPort: 1500
 
