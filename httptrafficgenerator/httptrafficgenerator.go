@@ -32,7 +32,7 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 func sendPostRequest(packet_total_size int, dest_url string, sequence_number int) {
 
 	if sequence_number%LOG_INTERVAL == 0 {
-		log.Printf("Sending the %d:th request\n", sequence_number)
+		log.Printf("Sending the %d:th request", sequence_number)
 	}
 
 	// adjusted_size = total_size - http headers (found with wireshark)
@@ -155,6 +155,8 @@ func main() {
 	if minSize > maxSize {
 		log.Fatal("minSize can't be bigger than maxSize")
 	}
+
+	rng = mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
 
 	sendHttpRequests(packet_count, minSize, maxSize, minIntervalMs, maxIntervalMs, dest_url)
 
