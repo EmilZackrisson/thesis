@@ -1,12 +1,12 @@
 apiVersion: projectcalico.org/v3
 kind: NetworkPolicy
 metadata:
-  name: allow-tcp-9000-in
+  name: allow-udp-1500-in
   namespace: default
 spec:
   podSelector:
     matchLabels:
-      app: tcpecho
+      app: udpecho
   policyTypes:
     - Ingress
   ingress:
@@ -16,8 +16,8 @@ spec:
             except:
               - 10.200.200.0/24
       ports:
-        - protocol: TCP
-          port: 9000
+        - protocol: UDP
+          port: 1500
 ---
 apiVersion: projectcalico.org/v3
 kind: NetworkPolicy

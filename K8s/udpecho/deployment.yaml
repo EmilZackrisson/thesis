@@ -22,7 +22,6 @@ spec:
           ports:
             - containerPort: 1500
               protocol: UDP
-
 ---
 apiVersion: v1
 kind: Service

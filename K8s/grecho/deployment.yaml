@@ -19,7 +19,6 @@ spec:
           image: ghcr.io/emilzackrisson/grecho:latest
           ports:
             - containerPort: 8001
-
 ---
 apiVersion: v1
 kind: Service
