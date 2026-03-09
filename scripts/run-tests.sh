@@ -100,9 +100,6 @@ if [[ $ISTIO_SIDECAR = "with" ]]; then
 
     echo "With Istio Sidecar"
 
-    echo "Istio sidecar deployment not implemented"
-    exit_and_fail
-
     check_istio_installed
     if [[ $ISTIO_INSTALLED = "false" ]]; then
         echo "Istio is not installed and this script was going to test with Istio installed, aborting"
