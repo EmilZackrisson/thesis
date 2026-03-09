@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 DATAPLANE=$1
 PROTOCOL=$2
 POLICY_DIRECTION=$3
