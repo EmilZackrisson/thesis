@@ -1,5 +1,26 @@
 #!/bin/bash
 
-echo "Running UDP testing"
+myexpid=$EXPID;
+myrunid=$RUNID;
+mykeyid=$KEYID;
 
-udpclient -s 10.200.200.1 -p 30002 -n 100 -i 100000 -e 1 -r 1 -k 1
+eval "$1"
+
+SERVER=${server:-10.1.0.1}
+minIfg=${minIfg:-0}
+maxIfg=${maxIfg:-100000}
+waitDistrib=${wtDist:-d}
+
+minSize=${minSize:-64}
+maxSize=${maxSize:-1460}
+pktDistrib=${pktDist:-d}
+
+pkts=${pktCount:-10000}
+samples=${samples:-1}
+dport=${destPort:-7}
+
+
+echo "udpclient -e $myexpid -r $myrunid -k $mykeyid -s $SERVER --port $dport -l $minSize -L $maxSize -m $pktDistrib -w $minIfg -W $maxIfg -v $waitDistrib -n $pkts "
+udpclient -e $myexpid -r $myrunid -k $mykeyid -s $SERVER --port $dport -l $minSize -L $maxSize -m $pktDistrib -w $minIfg -W $maxIfg -v $waitDistrib -n $pkts
+
+echo "SUCCESS"

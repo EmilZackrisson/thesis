@@ -9,19 +9,30 @@ ISTIO_POLICY=$5
 
 THESIS_REPO_PATH=$6
 
+ISTIO_INSTALLED=false
+
 exit_and_fail() {
     echo "FAILURE"
     exit 1
 }
 
+check_istio_installed() {
+    if kubectl get pods -n istio-system | grep -q 'No resources found in istio-syste namespace.'; then
+        echo "Istio is not installed"
+    else
+        echo "Istio is installed"
+        ISTIO_INSTALLED=true
+    fi
+}
+
 # Check if repo path is givne
-if [ -z $THESIS_REPO_PATH ]; then
+if [ -z "$THESIS_REPO_PATH" ]; then
     echo "No thesis repo path given"
     exit_and_fail
 fi
 
 # Check if thesis repo path exists
-if [ ! -d $THESIS_REPO_PATH ]; then
+if [ ! -d "$THESIS_REPO_PATH" ]; then
     echo "Thesis repo given by the path does not exist"
     exit_and_fail
 fi
@@ -36,11 +47,11 @@ else
     exit_and_fail
 fi
 
-if [[ $PROTOCOL = "tcp" ]]; then
-    echo "Testing TCP"
+if [[ $PROTOCOL = "udp" ]]; then
+    echo "Testing UDP"
 
-    echo "TCP testing not implemented"
-    exit_and_fail
+    echo "Deploying UDP-echo"
+    kubectl apply -f $THESIS_REPO_PATH/K8s/udpecho/deployment.yaml
 
 elif [[ $PROTOCOL = "http" ]]; then
     echo "Testing HTTP"
@@ -49,7 +60,7 @@ elif [[ $PROTOCOL = "http" ]]; then
     kubectl apply -f $THESIS_REPO_PATH/K8s/grecho/deployment.yaml
 
 else 
-    echo "Invalid protocol, must be (tcp, http)"
+    echo "Invalid protocol, must be (udp, http)"
     exit_and_fail
 fi
 
@@ -92,18 +103,30 @@ if [[ $ISTIO_SIDECAR = "with" ]]; then
     echo "Istio sidecar deployment not implemented"
     exit_and_fail
 
-    # TODO: Check if Istio is installed, if not ABORT or install (not sure)
+    check_istio_installed
+    if [[ $ISTIO_INSTALLED = "false" ]]; then
+        echo "Istio is not installed and this script was going to test with Istio installed, aborting"
+        exit_and_fail
+    fi
 
 elif [[ $ISTIO_SIDECAR = "no" ]]; then
     echo "Without Istio Sidecar"
 
-    # TODO: Check if Istio is installed, if so ABORT
+    check_istio_installed
+    if [[ $ISTIO_INSTALLED = "true" ]]; then
+        echo "Istio is installed and this script was going to test with Istio not installed, aborting"
+        exit_and_fail
+    fi
 
 elif [[ $ISTIO_SIDECAR = "withacceleration" ]]; then
     echo "Without Istio Sidecar"
 
-    # TODO: Check if Istio is installed, if so ABORT
-    
+    check_istio_installed
+    if [[ $ISTIO_INSTALLED = "true" ]]; then
+        echo "Istio is installed and this script was going to test with Istio not installed, aborting"
+        exit_and_fail
+    fi
+
 else
     echo "Invalid Istio sidecar option, must be (with, withacceleration, no)"
     exit_and_fail
@@ -118,7 +141,7 @@ if [[ $ISTIO_POLICY = "true" ]]; then
     echo "With Istio policies"
 
     echo "Applying Istio policy"
-    kubectl apply -f $THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml
+    kubectl apply -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
 
 elif [[ $ISTIO_POLICY = "false" ]]; then
     echo "Without Istio policy"
@@ -127,19 +150,47 @@ else
     exit_and_fail
 fi
 
-# TODO: Start cgroup recorder, wait 5 seconds
+
+if [[ $PROTOCOL = "udp" ]]; then
+    APP_SELECTOR="app=udpecho"
+elif [[ $PROTOCOL = "http" ]]; then
+    APP_SELECTOR="app=grecho"
+else
+    echo "Error matching protocol to app selector"
+    exit_and_fail
+fi
+
+echo "Starting cgroup recording 'cgv2-k8s-record start /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$PROTOCOL-$EXP_ID-$RUN_ID-$KEY_ID default $APP_SELECTOR'"
+cgv2-k8s-record start /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$PROTOCOL-$EXP_ID-$RUN_ID-$KEY_ID default $APP_SELECTOR
+echo "Sleeping 5 seconds"
+sleep 5
 
 # Continue with specific protocol testing script
-if [[ $PROTOCOL = "tcp" ]]; then
-    echo "Running TCP testing script"
+if [[ $PROTOCOL = "udp" ]]; then
+    echo "Running UDP testing script"
 
-    $THESIS_REPO_PATH/scripts/run-tcp-test.sh
+    $THESIS_REPO_PATH/scripts/run-udp-test.sh "server=10.200.200.1 pktCount=1000 destPort=30002 minIfg=1 maxIfg=1000000 minSize=10 maxSize=1500"
 
 elif [[ $PROTOCOL = "http" ]]; then
     echo "Running HTTP testing script"
 
     $THESIS_REPO_PATH/scripts/run-http-test.sh
 
-# TODO: Stop cgroup recorder, wait 5 seconds
+fi
+
+echo "Stopping cgroup recording"
+cgv2-k8s-record stop
+echo "Sleeping for 5 seconds"
+sleep 5
+
+# Clean up policies, deployments and services
+echo "Cleaning up"
+kubectl delete -f "$THESIS_REPO_PATH/K8s/grecho/deployment.yaml"
+kubectl delete -f "$THESIS_REPO_PATH/K8s/udpecho/deployment.yaml"
+
+kubectl delete -f "$THESIS_REPO_PATH/K8s/policies/ingress.yaml"
+kubectl delete -f "$THESIS_REPO_PATH/K8s/policies/egress.yaml"
+
+kubectl delete -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
 
 echo "SUCCESS"
