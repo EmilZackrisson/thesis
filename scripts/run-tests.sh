@@ -13,6 +13,8 @@ THESIS_REPO_PATH=$6
 
 ISTIO_INSTALLED=false
 
+alias cgv2-k8s-record="ssh apt-kitten /home/ubuntu/thesis/cgroup_recorder/cgv2-k8s-record.sh"
+
 exit_and_fail() {
     echo "FAILURE"
     exit 1
@@ -160,7 +162,7 @@ else
 fi
 
 echo "Starting cgroup recording 'cgv2-k8s-record start /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$PROTOCOL-$EXP_ID-$RUN_ID-$KEY_ID default $APP_SELECTOR'"
-sudo $THESIS_REPO_PATH/cgroup_recorder/cgv2-k8s-record.sh start /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$PROTOCOL-$EXP_ID-$RUN_ID-$KEY_ID default $APP_SELECTOR
+cgv2-k8s-record start /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$PROTOCOL-$EXP_ID-$RUN_ID-$KEY_ID default $APP_SELECTOR
 echo "Sleeping 5 seconds"
 sleep 5
 
@@ -178,7 +180,7 @@ elif [[ $PROTOCOL = "http" ]]; then
 fi
 
 echo "Stopping cgroup recording"
-sudo $THESIS_REPO_PATH/cgroup_recorder/cgv2-k8s-record.sh stop
+cgv2-k8s-record stop
 echo "Sleeping for 5 seconds"
 sleep 5
 
