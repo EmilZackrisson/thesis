@@ -13,13 +13,27 @@ THESIS_REPO_PATH=$6
 
 ISTIO_INSTALLED=false
 
-cgv2-k8s-record(){
-    ssh apt-kitten sudo /home/ubuntu/thesis/cgroup_recorder/cgv2-k8s-record.sh $@
-}
-
 exit_and_fail() {
     echo "FAILURE"
     exit 1
+}
+
+error_handler() {
+    local exit_code=$?
+    local line_no=$1
+    local cmd=$2
+
+    echo "❌ Error on line $line_no: '$cmd'"
+    echo "Exit code: $exit_code"
+    
+    echo "FAILURE"
+    exit 2
+}
+
+trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
+
+cgv2-k8s-record(){
+    ssh apt-kitten sudo /home/ubuntu/thesis/cgroup_recorder/cgv2-k8s-record.sh $@
 }
 
 check_istio_installed() {
