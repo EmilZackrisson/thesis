@@ -217,10 +217,14 @@ cgv2-k8s-record stop
 echo "Sleeping for 5 seconds"
 sleep 5
 
+echo "Parsing and converting the cgroup recordings to csv"
+ssh apt-kitten $THESIS_REPO_PATH/cgroup_recorder/parser/cg-record-parser.py --export-csv /home/ubuntu/cgroup-recordings/$RECORDING_NAME
+
 # Backup cgroup recordings to LONTAS
-echo "Copying cgroup recordings to /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$RECORDING_NAME"
-ssh apt-kitten cp -r /home/ubuntu/cgroup-recordings/$RECORDING_NAME /mnt/LONTAS/ExpControl/k8test/cgroup-recordings \
-    && chmod 755 -R /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$RECORDING_NAME
+echo "Copying cgroup csv files to /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$RECORDING_NAME"
+ssh apt-kitten cp -r /home/ubuntu/cgroup-recordings/$RECORDING_NAME/export /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$RECORDING_NAME-export
+ssh apt-kitten chmod 775 -R /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$RECORDING_NAME-export
+
 echo "Done copying"
 
 # Clean up policies, deployments and services
