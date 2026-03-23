@@ -189,7 +189,7 @@ sleep 5
 
 # Backup cgroup recordings to LONTAS
 echo "Copying cgroup recordings to /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$RECORDING_NAME"
-cp -r /home/ubuntu/cgroup-recordings/$RECORDING_NAME /mnt/LONTAS/ExpControl/k8test/cgroup-recordings
+ssh apt-kitten cp -r /home/ubuntu/cgroup-recordings/$RECORDING_NAME /mnt/LONTAS/ExpControl/k8test/cgroup-recordings
 echo "Done copying"
 
 # Clean up policies, deployments and services

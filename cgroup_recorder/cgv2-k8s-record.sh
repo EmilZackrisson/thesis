@@ -2,7 +2,7 @@
 #set -x
 set -eo pipefail
 
-INTERVAL="1"
+INTERVAL="0.2"
 TMPDIR="/tmp/cgv2-recorder"
 PIDFILE="$TMPDIR/recorder.pid"
 
@@ -41,7 +41,7 @@ discover_cgroups() {
     jq -r '
       .items[] |
       .metadata.name as $pod |
-      .status.containerStatuses[]? |
+            ((.status.containerStatuses // []) + (.status.initContainerStatuses // []))[]? |
       select(.containerID != null) |
       "\($pod) \(.name) \(.containerID)"
     ' | while read -r pod container cid; do
