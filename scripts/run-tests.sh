@@ -11,6 +11,8 @@ THESIS_REPO_PATH=$6
 
 ISTIO_INSTALLED=false
 
+export KUBECONFIG="/home/ubuntu/.kube/config"
+
 echo "Running as user=$USER"
 
 exit_and_fail() {
