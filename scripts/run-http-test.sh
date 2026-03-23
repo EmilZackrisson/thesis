@@ -3,7 +3,7 @@
 # This is made to run on NodeB (casual-lamb) only
 
 echo "Running httptrafficgenerator"
-PKT_COUNT=100
+PKT_COUNT=1000
 MIN_SIZE=200
 MAX_SIZE=1500
 MIN_INT_MS=1
