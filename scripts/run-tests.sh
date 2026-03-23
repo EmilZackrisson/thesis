@@ -70,7 +70,7 @@ else
     echo "Invalid dataplane option, must be (iptables, ebpf)"
     exit_and_fail
 fi
-cgroup_record_prefix+=$DATAPLANE
+cgroup_record_prefix+="$DATAPLANE-"
 
 if [[ $PROTOCOL = "udp" ]]; then
     echo "Testing UDP"
@@ -88,7 +88,7 @@ else
     echo "Invalid protocol, must be (udp, http)"
     exit_and_fail
 fi
-cgroup_record_prefix+=$PROTOCOL
+cgroup_record_prefix+="$PROTOCOL-"
 
 if [[ $POLICY_DIRECTION = "none" ]]; then
     echo "No policies"
@@ -115,7 +115,7 @@ else
     echo "Invalid policy direction, must be (none, ingress, egress, both)"
     exit_and_fail
 fi
-cgroup_record_prefix+=$POLICY_DIRECTION
+cgroup_record_prefix+="$POLICY_DIRECTION-"
 
 if [[ $ISTIO_SIDECAR = "with" ]]; then
 
@@ -155,7 +155,7 @@ else
     echo "Invalid Istio sidecar option, must be (with, withacceleration, no)"
     exit_and_fail
 fi
-cgroup_record_prefix+=$ISTIO_SIDECAR
+cgroup_record_prefix+="$ISTIO_SIDECAR-"
 
 if [[ $ISTIO_POLICY = "true" ]]; then
     if [[ $ISTIO_SIDECAR != "true" ]]; then
@@ -174,7 +174,7 @@ else
     echo "Invalid Istio policy argument, must be (true, false)"
     exit_and_fail
 fi
-cgroup_record_prefix+=$ISTIO_POLICY
+cgroup_record_prefix+="$ISTIO_POLICY-"
 
 
 if [[ $PROTOCOL = "udp" ]]; then
@@ -185,6 +185,13 @@ else
     echo "Error matching protocol to app selector"
     exit_and_fail
 fi
+
+echo "Waiting for all pods to be ready"
+kubectl wait pod \
+    --all \
+    --for=condition=Ready \
+    --timeout=3m \
+    --namespace=default
 
 RECORDING_NAME=$cgroup_record_prefix-$EXPID-$RUNID-$KEYID
 echo "Starting cgroup recording 'cgv2-k8s-record start /home/ubuntu/cgroup-recordings/$RECORDING_NAME default $APP_SELECTOR'"
