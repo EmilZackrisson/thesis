@@ -25,7 +25,7 @@ error_handler() {
     echo "Exit code: $exit_code"
     
     echo "FAILURE"
-    exit 2
+    exit 1
 }
 
 trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
