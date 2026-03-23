@@ -14,7 +14,7 @@ THESIS_REPO_PATH=$6
 ISTIO_INSTALLED=false
 
 cgv2-k8s-record(){
-    ssh apt-kitten /home/ubuntu/thesis/cgroup_recorder/cgv2-k8s-record.sh $@
+    ssh apt-kitten sudo /home/ubuntu/thesis/cgroup_recorder/cgv2-k8s-record.sh $@
 }
 
 exit_and_fail() {
