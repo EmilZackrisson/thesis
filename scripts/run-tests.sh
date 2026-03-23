@@ -210,12 +210,12 @@ echo "Done copying"
 
 # Clean up policies, deployments and services
 echo "Cleaning up"
-kubectl delete -f "$THESIS_REPO_PATH/K8s/grecho/deployment.yaml"
-kubectl delete -f "$THESIS_REPO_PATH/K8s/udpecho/deployment.yaml"
+kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/grecho/deployment.yaml"
+kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/udpecho/deployment.yaml"
 
-kubectl delete -f "$THESIS_REPO_PATH/K8s/policies/ingress.yaml"
-kubectl delete -f "$THESIS_REPO_PATH/K8s/policies/egress.yaml"
+kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/ingress.yaml"
+kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/egress.yaml"
 
-kubectl delete -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
+kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
 
 echo "SUCCESS"
