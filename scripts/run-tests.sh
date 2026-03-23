@@ -179,7 +179,7 @@ else
     exit_and_fail
 fi
 
-RECORDING_NAME=$PROTOCOL-$EXP_ID-$RUN_ID-$KEY_ID
+RECORDING_NAME=$PROTOCOL-$EXPID-$RUNID-$KEYID
 echo "Starting cgroup recording 'cgv2-k8s-record start /home/ubuntu/cgroup-recordings/$RECORDING_NAME default $APP_SELECTOR'"
 cgv2-k8s-record start /home/ubuntu/cgroup-recordings/$RECORDING_NAME default $APP_SELECTOR
 echo "Sleeping 5 seconds"
