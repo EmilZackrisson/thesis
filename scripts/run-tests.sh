@@ -11,6 +11,8 @@ THESIS_REPO_PATH=$6
 
 ISTIO_INSTALLED=false
 
+echo "Running as user=$USER"
+
 exit_and_fail() {
     echo "FAILURE"
     exit 1
