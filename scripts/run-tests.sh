@@ -163,8 +163,9 @@ else
     exit_and_fail
 fi
 
-echo "Starting cgroup recording 'cgv2-k8s-record start /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$PROTOCOL-$EXP_ID-$RUN_ID-$KEY_ID default $APP_SELECTOR'"
-cgv2-k8s-record start /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$PROTOCOL-$EXP_ID-$RUN_ID-$KEY_ID default $APP_SELECTOR
+RECORDING_NAME=$PROTOCOL-$EXP_ID-$RUN_ID-$KEY_ID
+echo "Starting cgroup recording 'cgv2-k8s-record start /home/ubuntu/cgroup-recordings/$RECORDING_NAME default $APP_SELECTOR'"
+cgv2-k8s-record start /home/ubuntu/cgroup-recordings/$RECORDING_NAME default $APP_SELECTOR
 echo "Sleeping 5 seconds"
 sleep 5
 
@@ -185,6 +186,11 @@ echo "Stopping cgroup recording"
 cgv2-k8s-record stop
 echo "Sleeping for 5 seconds"
 sleep 5
+
+# Backup cgroup recordings to LONTAS
+echo "Copying cgroup recordings to /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$RECORDING_NAME"
+cp -r /home/ubuntu/cgroup-recordings/$RECORDING_NAME /mnt/LONTAS/ExpControl/k8test/cgroup-recordings
+echo "Done copying"
 
 # Clean up policies, deployments and services
 echo "Cleaning up"
