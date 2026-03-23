@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 DATAPLANE=$1
 PROTOCOL=$2
 POLICY_DIRECTION=$3
@@ -13,9 +11,33 @@ THESIS_REPO_PATH=$6
 
 ISTIO_INSTALLED=false
 
+export KUBECONFIG="/home/ubuntu/.kube/config"
+
+cgroup_record_prefix=""
+
+echo "Running as user=$USER"
+
 exit_and_fail() {
     echo "FAILURE"
     exit 1
+}
+
+error_handler() {
+    local exit_code=$?
+    local line_no=$1
+    local cmd=$2
+
+    echo "❌ Error on line $line_no: '$cmd'"
+    echo "Exit code: $exit_code"
+    
+    echo "FAILURE"
+    exit 1
+}
+
+trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
+
+cgv2-k8s-record(){
+    ssh apt-kitten sudo /home/ubuntu/thesis/cgroup_recorder/cgv2-k8s-record.sh $@
 }
 
 check_istio_installed() {
@@ -48,6 +70,7 @@ else
     echo "Invalid dataplane option, must be (iptables, ebpf)"
     exit_and_fail
 fi
+cgroup_record_prefix+="$DATAPLANE-"
 
 if [[ $PROTOCOL = "udp" ]]; then
     echo "Testing UDP"
@@ -65,6 +88,7 @@ else
     echo "Invalid protocol, must be (udp, http)"
     exit_and_fail
 fi
+cgroup_record_prefix+="$PROTOCOL-"
 
 if [[ $POLICY_DIRECTION = "none" ]]; then
     echo "No policies"
@@ -91,6 +115,7 @@ else
     echo "Invalid policy direction, must be (none, ingress, egress, both)"
     exit_and_fail
 fi
+cgroup_record_prefix+="$POLICY_DIRECTION-"
 
 if [[ $ISTIO_SIDECAR = "with" ]]; then
 
@@ -130,6 +155,7 @@ else
     echo "Invalid Istio sidecar option, must be (with, withacceleration, no)"
     exit_and_fail
 fi
+cgroup_record_prefix+="$ISTIO_SIDECAR-"
 
 if [[ $ISTIO_POLICY = "true" ]]; then
     if [[ $ISTIO_SIDECAR != "true" ]]; then
@@ -148,6 +174,7 @@ else
     echo "Invalid Istio policy argument, must be (true, false)"
     exit_and_fail
 fi
+cgroup_record_prefix+="$ISTIO_POLICY-"
 
 
 if [[ $PROTOCOL = "udp" ]]; then
@@ -159,8 +186,16 @@ else
     exit_and_fail
 fi
 
-echo "Starting cgroup recording 'cgv2-k8s-record start /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$PROTOCOL-$EXP_ID-$RUN_ID-$KEY_ID default $APP_SELECTOR'"
-cgv2-k8s-record start /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$PROTOCOL-$EXP_ID-$RUN_ID-$KEY_ID default $APP_SELECTOR
+echo "Waiting for all pods to be ready"
+kubectl wait pod \
+    --all \
+    --for=condition=Ready \
+    --timeout=3m \
+    --namespace=default
+
+RECORDING_NAME=$cgroup_record_prefix-$EXPID-$RUNID-$KEYID
+echo "Starting cgroup recording 'cgv2-k8s-record start /home/ubuntu/cgroup-recordings/$RECORDING_NAME default $APP_SELECTOR'"
+cgv2-k8s-record start /home/ubuntu/cgroup-recordings/$RECORDING_NAME default $APP_SELECTOR
 echo "Sleeping 5 seconds"
 sleep 5
 
@@ -182,14 +217,20 @@ cgv2-k8s-record stop
 echo "Sleeping for 5 seconds"
 sleep 5
 
+# Backup cgroup recordings to LONTAS
+echo "Copying cgroup recordings to /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$RECORDING_NAME"
+ssh apt-kitten cp -r /home/ubuntu/cgroup-recordings/$RECORDING_NAME /mnt/LONTAS/ExpControl/k8test/cgroup-recordings \
+    && chmod 755 -R /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$RECORDING_NAME
+echo "Done copying"
+
 # Clean up policies, deployments and services
 echo "Cleaning up"
-kubectl delete -f "$THESIS_REPO_PATH/K8s/grecho/deployment.yaml"
-kubectl delete -f "$THESIS_REPO_PATH/K8s/udpecho/deployment.yaml"
+kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/grecho/deployment.yaml"
+kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/udpecho/deployment.yaml"
 
-kubectl delete -f "$THESIS_REPO_PATH/K8s/policies/ingress.yaml"
-kubectl delete -f "$THESIS_REPO_PATH/K8s/policies/egress.yaml"
+kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/ingress.yaml"
+kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/egress.yaml"
 
-kubectl delete -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
+kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
 
 echo "SUCCESS"

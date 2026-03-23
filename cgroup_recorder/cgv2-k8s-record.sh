@@ -2,7 +2,7 @@
 #set -x
 set -eo pipefail
 
-INTERVAL="1"
+INTERVAL="0.2"
 TMPDIR="/tmp/cgv2-recorder"
 PIDFILE="$TMPDIR/recorder.pid"
 
@@ -41,7 +41,7 @@ discover_cgroups() {
     jq -r '
       .items[] |
       .metadata.name as $pod |
-      .status.containerStatuses[]? |
+            ((.status.containerStatuses // []) + (.status.initContainerStatuses // []))[]? |
       select(.containerID != null) |
       "\($pod) \(.name) \(.containerID)"
     ' | while read -r pod container cid; do
@@ -52,7 +52,17 @@ discover_cgroups() {
 
         pod_slice="${cg_full%%:*}"
         container_scope="crio-${cid}.scope"
-        full_path="/sys/fs/cgroup/kubepods.slice/kubepods-besteffort.slice/${pod_slice}/${container_scope}"
+
+        qos_slice=""
+        if [[ "$pod_slice" == kubepods-besteffort-* ]]; then
+            qos_slice="kubepods-besteffort.slice"
+        elif [[ "$pod_slice" == kubepods-burstable-* ]]; then
+            qos_slice="kubepods-burstable.slice"
+        else
+            continue
+        fi
+
+        full_path="/sys/fs/cgroup/kubepods.slice/${qos_slice}/${pod_slice}/${container_scope}"
 
         # FIXED: check for existence, not directory
         [[ -e "$full_path" ]] || continue

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from itertools import product
 import sys
 
@@ -12,6 +14,8 @@ lists = [['iptables', 'ebpf'], ['udp', 'http'], ['none', 'ingress', 'egress', 'b
 permutations = list(product(*lists))
 
 passed = []
+
+suffix = "2>&1 | tee -a /var/log/k8test-ntas.log"
 
 for perm in permutations:
     if perm[1] == 'udp' and perm[3] != 'no':
@@ -28,4 +32,4 @@ for perm in permutations:
         passed.append(' '.join(perm))
 
 for perm in passed:
-    print(f"{SCRIPTPATH} {perm} {REPOPATH}")
+    print(f"{SCRIPTPATH} {perm} {REPOPATH} {suffix}")
