@@ -24,15 +24,18 @@ exit_and_fail() {
 
 clean_up() {
     echo "Cleaning up Kubernetes resources"
-    kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/grecho/deployment.yaml"
-    kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/udpecho/deployment.yaml"
+    kubectl delete --wait=true --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/grecho/deployment.yaml"
+    kubectl delete --wait=true --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/udpecho/deployment.yaml"
 
-    kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/ingress.yaml"
-    kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/egress.yaml"
+    kubectl delete --wait=true --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/ingress.yaml"
+    kubectl delete --wait=true --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/egress.yaml"
 
     if [[ $ISTIO_INSTALLED = "true" ]]; then
-        kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
-    fi    
+        kubectl delete --ignore-not-found=true --wait=true -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
+    fi
+
+    echo "Sleeping for 5 seconds"
+    sleep 5
 }
 
 cgv2-k8s-record(){
@@ -96,13 +99,13 @@ if [[ $PROTOCOL = "udp" ]]; then
     echo "Testing UDP"
 
     echo "Deploying UDP-echo"
-    kubectl apply -f $THESIS_REPO_PATH/K8s/udpecho/deployment.yaml
+    kubectl apply --wait=true --timeout=3m -f $THESIS_REPO_PATH/K8s/udpecho/deployment.yaml
 
 elif [[ $PROTOCOL = "http" ]]; then
     echo "Testing HTTP"
 
     echo "Deploying grecho in k8s"
-    kubectl apply -f $THESIS_REPO_PATH/K8s/grecho/deployment.yaml
+    kubectl apply --wait=true --timeout=3m -f $THESIS_REPO_PATH/K8s/grecho/deployment.yaml
 
 else 
     echo "Invalid protocol, must be (udp, http)"
@@ -223,7 +226,7 @@ sleep 5
 if [[ $PROTOCOL = "udp" ]]; then
     echo "Running UDP testing script"
 
-    $THESIS_REPO_PATH/scripts/run-udp-test.sh "server=10.200.200.1 pktCount=1000 destPort=30002 minIfg=1 maxIfg=1000000 minSize=10 maxSize=1500 wtDist=u pktDist=u"
+    $THESIS_REPO_PATH/scripts/run-udp-test.sh "server=10.200.200.1 pktCount=1000 destPort=30002 minIfg=1000 maxIfg=1000000 minSize=10 maxSize=1500 wtDist=u pktDist=u"
 
 elif [[ $PROTOCOL = "http" ]]; then
     echo "Running HTTP testing script"

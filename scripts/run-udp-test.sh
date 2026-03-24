@@ -6,14 +6,14 @@ mykeyid=$KEYID;
 
 eval "$1"
 
-SERVER=${server:-10.1.0.1}
+SERVER=${server:-10.200.200.1}
 minIfg=${minIfg:-0}
 maxIfg=${maxIfg:-100000}
-waitDistrib=${wtDist:-d}
+waitDistrib=${wtDist:-u}
 
 minSize=${minSize:-64}
 maxSize=${maxSize:-1460}
-pktDistrib=${pktDist:-d}
+pktDistrib=${pktDist:-u}
 
 pkts=${pktCount:-10000}
 samples=${samples:-1}
