@@ -30,7 +30,9 @@ clean_up() {
     kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/ingress.yaml"
     kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/egress.yaml"
 
-    kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
+    if [[ $ISTIO_INSTALLED = "true" ]]; then
+        kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
+    fi    
 }
 
 cgv2-k8s-record(){
@@ -55,8 +57,6 @@ error_handler() {
 }
 
 trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
-
-
 
 check_istio_installed() {
     if kubectl get namespace istio-system >/dev/null 2>&1 && \
@@ -223,7 +223,7 @@ sleep 5
 if [[ $PROTOCOL = "udp" ]]; then
     echo "Running UDP testing script"
 
-    $THESIS_REPO_PATH/scripts/run-udp-test.sh "server=10.200.200.1 pktCount=1000 destPort=30002 minIfg=1 maxIfg=1000000 minSize=10 maxSize=1500"
+    $THESIS_REPO_PATH/scripts/run-udp-test.sh "server=10.200.200.1 pktCount=1000 destPort=30002 minIfg=1 maxIfg=1000000 minSize=10 maxSize=1500 wtDist=u pktDist=u"
 
 elif [[ $PROTOCOL = "http" ]]; then
     echo "Running HTTP testing script"
