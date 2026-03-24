@@ -4,13 +4,9 @@ metadata:
   name: allow-udp-1500-in
   namespace: default
 spec:
-  podSelector:
-    matchLabels:
-      app: udpecho
-  policyTypes:
-    - Ingress
+  selector: app == 'udpecho'
   ingress:
-    - from:
+    - source:
         - ipBlock:
             cidr: 0.0.0.0/0
             except:
@@ -25,13 +21,9 @@ metadata:
   name: allow-tcp-8001-in
   namespace: default
 spec:
-  podSelector:
-    matchLabels:
-      app: grecho
-  policyTypes:
-    - Ingress
+  selector: app == 'grecho'
   ingress:
-    - from:
+    - source:
         - ipBlock:
             cidr: 0.0.0.0/0
             except:
