@@ -33,3 +33,4 @@ spec:
       targetPort: 8001
       nodePort: 30001
   type: NodePort
+  externalTrafficPolicy: Local
