@@ -22,13 +22,33 @@ exit_and_fail() {
     exit 1
 }
 
+clean_up() {
+    echo "Cleaning up Kubernetes resources"
+    kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/grecho/deployment.yaml"
+    kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/udpecho/deployment.yaml"
+
+    kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/ingress.yaml"
+    kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/egress.yaml"
+
+    kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
+}
+
+cgv2-k8s-record(){
+    ssh apt-kitten sudo /home/ubuntu/thesis/cgroup_recorder/cgv2-k8s-record.sh $@
+}
+
 error_handler() {
+    trap - ERR
+
     local exit_code=$?
     local line_no=$1
     local cmd=$2
 
     echo "❌ Error on line $line_no: '$cmd'"
     echo "Exit code: $exit_code"
+
+    cgv2-k8s-record stop
+    clean_up
     
     echo "FAILURE"
     exit 1
@@ -36,9 +56,7 @@ error_handler() {
 
 trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
 
-cgv2-k8s-record(){
-    ssh apt-kitten sudo /home/ubuntu/thesis/cgroup_recorder/cgv2-k8s-record.sh $@
-}
+
 
 check_istio_installed() {
     if kubectl get namespace istio-system >/dev/null 2>&1 && \
@@ -231,12 +249,6 @@ echo "Done copying"
 
 # Clean up policies, deployments and services
 echo "Cleaning up"
-kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/grecho/deployment.yaml"
-kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/udpecho/deployment.yaml"
-
-kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/ingress.yaml"
-kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/egress.yaml"
-
-kubectl delete --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/grecho-authorization-policy.yaml"
+clean_up
 
 echo "SUCCESS"

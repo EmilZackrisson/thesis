@@ -58,6 +58,8 @@ for ((i=1; i<=MAX_RETRIES; i++)); do
     )
   ' >/dev/null; then
     echo "All TigeraStatus resources are fully ready."
+    
+    kubectl taint node apt-kitten node-role.kubernetes.io/control-plane:NoSchedule-
     exit 0
   fi
 
