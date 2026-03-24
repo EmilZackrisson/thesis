@@ -41,11 +41,13 @@ cgv2-k8s-record(){
 }
 
 check_istio_installed() {
-    if kubectl get pods -n istio-system | grep -q 'No resources found in istio-syste namespace.'; then
-        echo "Istio is not installed"
-    else
+    if kubectl get namespace istio-system >/dev/null 2>&1 && \
+       kubectl get pods -n istio-system --no-headers 2>/dev/null | grep -q .; then
         echo "Istio is installed"
         ISTIO_INSTALLED=true
+    else
+        echo "Istio is not installed"
+        ISTIO_INSTALLED=false
     fi
 }
 
