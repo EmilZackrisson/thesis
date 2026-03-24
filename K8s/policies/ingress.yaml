@@ -1,33 +1,37 @@
-apiVersion: projectcalico.org/v3
+apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-udp-1500-in
   namespace: default
 spec:
-  selector: app == 'udpecho'
+  podSelector:
+    matchLabels:
+      app: udpecho
+  policyTypes:
+    - Ingress
   ingress:
-    - source:
+    - from:
         - ipBlock:
-            cidr: 0.0.0.0/0
-            except:
-              - 10.200.200.0/24
+            cidr: 10.200.200.0/24
       ports:
         - protocol: UDP
           port: 1500
 ---
-apiVersion: projectcalico.org/v3
+apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-tcp-8001-in
   namespace: default
 spec:
-  selector: app == 'grecho'
+  podSelector:
+    matchLabels:
+      app: grecho
+  policyTypes:
+    - Ingress
   ingress:
-    - source:
+    - from:
         - ipBlock:
-            cidr: 0.0.0.0/0
-            except:
-              - 10.200.200.0/24
+            cidr: 10.200.200.0/24
       ports:
         - protocol: TCP
           port: 8001
