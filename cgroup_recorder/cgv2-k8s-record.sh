@@ -72,7 +72,7 @@ discover_cgroups() {
     done
 
     # Get Istiod pod
-    kubectl get pods -n istio-system -l app=istiod -o json |
+    kubectl get pods -n istio-system -o json |
     jq -r '
       .items[] |
       .metadata.name as $pod |
