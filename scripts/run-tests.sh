@@ -156,6 +156,11 @@ if [[ $ISTIO_SIDECAR = "with" ]]; then
         exit_and_fail
     fi
 
+    if [[ $POLICY_DIRECTION != "none" ]]; then
+        echo "Applying network policies to allow comms to istiod"
+        kubectl apply -f "$THESIS_REPO_PATH/K8s/policies/istiod-networkpolicy.yaml"
+    fi
+
 elif [[ $ISTIO_SIDECAR = "no" ]]; then
     echo "Without Istio Sidecar"
 
@@ -172,6 +177,11 @@ elif [[ $ISTIO_SIDECAR = "withacceleration" ]]; then
     if [[ $ISTIO_INSTALLED = "true" ]]; then
         echo "Istio is installed and this script was going to test with Istio not installed, aborting"
         exit_and_fail
+    fi
+
+    if [[ $POLICY_DIRECTION != "none" ]]; then
+        echo "Applying network policies to allow comms to istiod"
+        kubectl apply -f "$THESIS_REPO_PATH/K8s/policies/istiod-networkpolicy.yaml"
     fi
 
 else
