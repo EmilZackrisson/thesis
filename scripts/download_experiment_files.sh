@@ -86,7 +86,7 @@ elif [[ "$PROTOCOL" == "HTTP" ]]; then
 
         new_name="${file%.cap}.csv"
 
-        python3 /home/emizac/http-service-delay-dpmi/http_delay_analyzer.py \
+        python3 ~/http-service-delay-dpmi/http_delay_analyzer.py \
             $file \
             -o $new_name \
             -p 30001
