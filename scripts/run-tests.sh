@@ -191,7 +191,7 @@ fi
 cgroup_record_prefix+="$ISTIO_SIDECAR-"
 
 if [[ $ISTIO_POLICY = "true" ]]; then
-    if [[ $ISTIO_SIDECAR != "true" ]]; then
+    if [[ $ISTIO_SIDECAR == "no" ]]; then
         echo "Cannot use Istio policies without istio sidecar"
         exit_and_fail
     fi
