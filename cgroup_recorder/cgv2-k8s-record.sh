@@ -37,7 +37,42 @@ discover_cgroups() {
     CGROUP_LIST="$TMPDIR/cgroups.list"
     : >"$CGROUP_LIST"
 
+    # Get pods by selector
     kubectl get pods -n "$namespace" -l "$selector" -o json |
+    jq -r '
+      .items[] |
+      .metadata.name as $pod |
+            ((.status.containerStatuses // []) + (.status.initContainerStatuses // []))[]? |
+      select(.containerID != null) |
+      "\($pod) \(.name) \(.containerID)"
+    ' | while read -r pod container cid; do
+        cid="${cid#cri-o://}"
+
+        cg_full="$(crictl inspect "$cid" 2>/dev/null | jq -r '.info.runtimeSpec.linux.cgroupsPath')"
+        [[ -z "$cg_full" || "$cg_full" == "null" ]] && continue
+
+        pod_slice="${cg_full%%:*}"
+        container_scope="crio-${cid}.scope"
+
+        qos_slice=""
+        if [[ "$pod_slice" == kubepods-besteffort-* ]]; then
+            qos_slice="kubepods-besteffort.slice"
+        elif [[ "$pod_slice" == kubepods-burstable-* ]]; then
+            qos_slice="kubepods-burstable.slice"
+        else
+            continue
+        fi
+
+        full_path="/sys/fs/cgroup/kubepods.slice/${qos_slice}/${pod_slice}/${container_scope}"
+
+        # FIXED: check for existence, not directory
+        [[ -e "$full_path" ]] || continue
+
+        echo "$pod $container $full_path" >>"$CGROUP_LIST"
+    done
+
+    # Get Istiod pod
+    kubectl get pods -n istio-system -l app=istiod -o json |
     jq -r '
       .items[] |
       .metadata.name as $pod |

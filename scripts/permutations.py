@@ -15,7 +15,7 @@ permutations = list(product(*lists))
 
 passed = []
 
-suffix = "2>&1 | tee -a /var/log/k8test-ntas.log"
+suffix = "2>&1 | tee -a /var/log/k8test-ntas.log "
 
 for perm in permutations:
     if perm[1] == 'udp' and perm[3] != 'no':
