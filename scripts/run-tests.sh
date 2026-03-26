@@ -10,6 +10,7 @@ ISTIO_POLICY=$5
 THESIS_REPO_PATH=$6
 
 ISTIO_INSTALLED=false
+MERBRIDGE_INSTALLED=false
 
 export KUBECONFIG="/home/ubuntu/.kube/config"
 
@@ -69,6 +70,17 @@ check_istio_installed() {
     else
         echo "Istio is not installed"
         ISTIO_INSTALLED=false
+    fi
+}
+
+check_merbridge_installed() {
+    if kubectl get namespace istio-system >/dev/null 2>&1 && \
+       kubectl get pods -n istio-system -l app=merbridge --no-headers 2>/dev/null | grep -q .; then
+        echo "Merbridge is installed"
+        MERBRIDGE_INSTALLED=true
+    else
+        echo "Merbridge is not installed"
+        MERBRIDGE_INSTALLED=false
     fi
 }
 
@@ -171,11 +183,23 @@ elif [[ $ISTIO_SIDECAR = "no" ]]; then
     fi
 
 elif [[ $ISTIO_SIDECAR = "withacceleration" ]]; then
-    echo "Without Istio Sidecar"
+    echo "With Istio Sidecar and Merbridge eBPF acceleration."
+
+    # Check so that protocol is http
+    if [[ $PROTOCOL != "http" ]]; then
+        echo "Istio sidecar can only be used with http"
+        exit_and_fail
+    fi
 
     check_istio_installed
-    if [[ $ISTIO_INSTALLED = "true" ]]; then
-        echo "Istio is installed and this script was going to test with Istio not installed, aborting"
+    if [[ $ISTIO_INSTALLED = "false" ]]; then
+        echo "Istio is not installed and this script was going to test with Istio installed, aborting"
+        exit_and_fail
+    fi
+
+    check_merbridge_installed
+    if [[ $MERBRIDGE_INSTALLED = "false" ]]; then
+        echo "Merbridge is not installed and this script was going to test with Merbridge installed, aborting"
         exit_and_fail
     fi
 
