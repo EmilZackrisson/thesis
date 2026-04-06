@@ -277,6 +277,15 @@ sleep 5
 echo "Parsing and converting the cgroup recordings to csv"
 ssh apt-kitten sudo $THESIS_REPO_PATH/cgroup_recorder/parser/cg-record-parser.py --export-csv /home/ubuntu/cgroup-recordings/$RECORDING_NAME
 
+# Remove all raw snapshots
+recording_dir="/home/ubuntu/cgroup-recordings/$RECORDING_NAME"
+for path in "$recording_dir"/*; do
+    name="$(basename "$path")"
+    [ "$name" = "export" ] && continue
+    [ "$name" = "meta.txt" ] && continue
+    sudo rm -rf "$path"
+done
+
 # Backup cgroup recordings to LONTAS
 echo "Copying cgroup csv files to /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$RECORDING_NAME"
 ssh apt-kitten sudo cp -r /home/ubuntu/cgroup-recordings/$RECORDING_NAME/export /mnt/LONTAS/ExpControl/k8test/cgroup-recordings/$RECORDING_NAME-export
