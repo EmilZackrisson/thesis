@@ -260,7 +260,7 @@ sleep 5
 if [[ $PROTOCOL = "udp" ]]; then
     echo "Running UDP testing script"
 
-    $THESIS_REPO_PATH/scripts/run-udp-test.sh "server=10.200.200.1 pktCount=1000 destPort=30002 minIfg=1000 maxIfg=1000000 minSize=10 maxSize=1500 wtDist=u pktDist=u"
+    $THESIS_REPO_PATH/scripts/run-udp-test.sh "server=10.200.200.1 pktCount=2000 destPort=30002 minIfg=1000 maxIfg=1000000 minSize=10 maxSize=1500 wtDist=u pktDist=u"
 
 elif [[ $PROTOCOL = "http" ]]; then
     echo "Running HTTP testing script"
