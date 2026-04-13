@@ -49,7 +49,7 @@ def listener():
         counter = data[0]
         with rc_lock:
             received_counters.add(counter)
-        logging.info("Received response from %s:%d counter=%d", addr[0], addr[1], counter)
+        #logging.info("Received response from %s:%d counter=%d", addr[0], addr[1], counter)
 
 listener_thread = threading.Thread(target=listener, daemon=True)
 listener_thread.start()
@@ -77,12 +77,12 @@ try:
 
             if not seen:
                 logging.warning("No response for counter %d (byte %d) size %d", i, i & 0xFF, cur_size)
-            else:
-                logging.info("Got response for counter %d", i)
+            #else:
+            #    logging.info("Got response for counter %d", i)
 
             i += 1
             time.sleep(DELAY_S)
-            
+
         cur_size = cur_size + INCREMENT_SIZE
         
 finally:
