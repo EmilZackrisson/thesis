@@ -17,10 +17,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(mes
 logging.info("UDP target IP: %s", UDP_IP)
 logging.info("UDP target port: %s", UDP_PORT)
 
-def build_payload_1byte(counter: int, cur_size: int) -> bytearray:
-    if cur_size < 1:
-        raise ValueError("cur_size must be >= 1")
-    return bytearray([counter & 0xFF]) + bytearray(b'x' * (cur_size - 1))
+def build_payload_counter(counter: int, cur_size: int, counter_len: int = 4) -> bytearray:
+    if cur_size < counter_len:
+        raise ValueError(f"cur_size must be >= {counter_len}")
+    return bytearray(counter.to_bytes(counter_len, "big") + b'x' * (cur_size - counter_len))
 
 sock = socket.socket(socket.AF_INET, # Internet
                      socket.SOCK_DGRAM) # UDP
@@ -46,7 +46,9 @@ def listener():
             break
         if not data:
             continue
-        counter = data[0]
+        if len(data) < 4:
+            continue
+        counter = int.from_bytes(data[:4], "big")
         with rc_lock:
             received_counters.add(counter)
         #logging.info("Received response from %s:%d counter=%d", addr[0], addr[1], counter)
@@ -61,8 +63,8 @@ try:
 
         for _ in range(COUNT_PER_SIZE):
 
-            # Build a bytearray, starting with a counter and the rest filled with 'x' of size cur_size
-            data = build_payload_1byte(i, cur_size)
+            # Build a bytearray, starting with a 4-byte counter and the rest filled with 'x' of size cur_size
+            data = build_payload_counter(i, cur_size)
             sock.sendto(data, (UDP_IP, UDP_PORT))
 
             # Wait briefly for a response containing the counter byte
@@ -70,13 +72,15 @@ try:
             seen = False
             while time.time() < deadline:
                 with rc_lock:
-                    if (i & 0xFF) in received_counters:
+                    if i in received_counters:
                         seen = True
+                        # remove to keep the set small and avoid reused matches
+                        received_counters.discard(i)
                         break
                 time.sleep(0.005)
 
             if not seen:
-                logging.warning("No response for counter %d (byte %d) size %d", i, i & 0xFF, cur_size)
+                logging.warning("No response for counter %d size %d", i, cur_size)
             #else:
             #    logging.info("Got response for counter %d", i)
 
