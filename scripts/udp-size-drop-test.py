@@ -59,28 +59,32 @@ i = 0
 try:
     while cur_size <= END_SIZE:
 
-        # Build a bytearray, starting with a counter and the rest filled with 'x' of size cur_size
-        data = build_payload_1byte(i, cur_size)
-        sock.sendto(data, (UDP_IP, UDP_PORT))
+        for _ in range(COUNT_PER_SIZE):
 
-        # Wait briefly for a response containing the counter byte
-        deadline = time.time() + RESPONSE_TIMEOUT
-        seen = False
-        while time.time() < deadline:
-            with rc_lock:
-                if (i & 0xFF) in received_counters:
-                    seen = True
-                    break
-            time.sleep(0.005)
+            # Build a bytearray, starting with a counter and the rest filled with 'x' of size cur_size
+            data = build_payload_1byte(i, cur_size)
+            sock.sendto(data, (UDP_IP, UDP_PORT))
 
-        if not seen:
-            logging.warning("No response for counter %d (byte %d) size %d", i, i & 0xFF, cur_size)
-        else:
-            logging.info("Got response for counter %d", i)
+            # Wait briefly for a response containing the counter byte
+            deadline = time.time() + RESPONSE_TIMEOUT
+            seen = False
+            while time.time() < deadline:
+                with rc_lock:
+                    if (i & 0xFF) in received_counters:
+                        seen = True
+                        break
+                time.sleep(0.005)
 
-        i += 1
+            if not seen:
+                logging.warning("No response for counter %d (byte %d) size %d", i, i & 0xFF, cur_size)
+            else:
+                logging.info("Got response for counter %d", i)
+
+            i += 1
+            time.sleep(DELAY_S)
+            
         cur_size = cur_size + INCREMENT_SIZE
-        time.sleep(DELAY_S)
+        
 finally:
     stop_event.set()
     try:
