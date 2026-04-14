@@ -28,7 +28,7 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 	return b, nil
 }
 
-// packet_total_size only has an effect if bigger than 184
+// packet_total_size only has an effect if bigger than 161
 func sendPostRequest(packet_total_size int, dest_url string, sequence_number int) {
 
 	if sequence_number%LOG_INTERVAL == 0 {
@@ -36,7 +36,7 @@ func sendPostRequest(packet_total_size int, dest_url string, sequence_number int
 	}
 
 	// adjusted_size = total_size - http headers (found with wireshark)
-	adjusted_size := packet_total_size - 184
+	adjusted_size := packet_total_size - 161
 	if adjusted_size < 0 {
 		adjusted_size = 0
 	}
