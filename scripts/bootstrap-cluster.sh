@@ -30,6 +30,8 @@ if [ $dataplane == "iptables" ] ; then
 elif [ $dataplane == "ebpf" ] ; then
     echo "Installing ebpf dataplane"
     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/${calico_version}/manifests/custom-resources-bpf.yaml
+
+    kubectl patch felixconfiguration default --type merge -p '{"spec":{"bpfDataIfacePattern":"^vlan-1111$"}}'
 else 
     echo "No valid dataplane selected"
     exit 1
