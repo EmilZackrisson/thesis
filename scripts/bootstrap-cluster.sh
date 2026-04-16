@@ -31,7 +31,14 @@ elif [ $dataplane == "ebpf" ] ; then
     echo "Installing ebpf dataplane"
     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/${calico_version}/manifests/custom-resources-bpf.yaml
 
+    echo "Sleeping for 10 seconds waiting for all CRDs and configs to be created"
+    sleep 10
+
+    echo "Applying Felix config to use vlan-1111 interface as a workaround"
     kubectl patch felixconfiguration default --type merge -p '{"spec":{"bpfDataIfacePattern":"^vlan-1111$"}}'
+    echo "Sleeping for 5 seconds before restarting calico-node pod"
+    sleep 5
+    kubectl delete pod -n kube-system -l k8s-app=calico-node
 else 
     echo "No valid dataplane selected"
     exit 1
