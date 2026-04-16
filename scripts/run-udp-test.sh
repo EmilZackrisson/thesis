@@ -20,5 +20,5 @@ samples=${samples:-1}
 dport=${destPort:-7}
 
 
-echo "udpclient -e $myexpid -r $myrunid -k $mykeyid -s $SERVER --port $dport -l $minSize -L $maxSize -m $pktDistrib -w $minIfg -W $maxIfg -v $waitDistrib -n $pkts "
-udpclient -e $myexpid -r $myrunid -k $mykeyid -s $SERVER --port $dport -l $minSize -L $maxSize -m $pktDistrib -w $minIfg -W $maxIfg -v $waitDistrib -n $pkts
+echo "udpclient -e $myexpid -r $myrunid -k $mykeyid -s $SERVER --port $dport -l $minSize -L $maxSize -m $pktDistrib -w $minIfg -W $maxIfg -v $waitDistrib -n $pkts -B -q "
+udpclient -e $myexpid -r $myrunid -k $mykeyid -s $SERVER --port $dport -l $minSize -L $maxSize -m $pktDistrib -w $minIfg -W $maxIfg -v $waitDistrib -n $pkts -B -q
