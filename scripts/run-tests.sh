@@ -27,6 +27,7 @@ clean_up() {
     echo "Cleaning up Kubernetes resources"
     kubectl delete --wait=true --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/grecho/deployment.yaml"
     kubectl delete --wait=true --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/udpecho/deployment.yaml"
+    kubectl delete --wait=true --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/tcpecho/deployment.yaml"
 
     kubectl delete --wait=true --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/ingress.yaml"
     kubectl delete --wait=true --ignore-not-found=true -f "$THESIS_REPO_PATH/K8s/policies/egress.yaml"
@@ -118,6 +119,12 @@ elif [[ $PROTOCOL = "http" ]]; then
 
     echo "Deploying grecho in k8s"
     kubectl apply --wait=true --timeout=3m -f $THESIS_REPO_PATH/K8s/grecho/deployment.yaml
+
+elif [[ $PROTOCOL = "tcp" ]]; then
+    echo "Testing TCP"
+
+    echo "Deploying tcpecho in k8s"
+    kubectl apply --wait=true --timeout=3m -f $THESIS_REPO_PATH/K8s/tcpecho/deployment.yaml
 
 else 
     echo "Invalid protocol, must be (udp, http)"
@@ -238,6 +245,8 @@ if [[ $PROTOCOL = "udp" ]]; then
     APP_SELECTOR="app=udpecho"
 elif [[ $PROTOCOL = "http" ]]; then
     APP_SELECTOR="app=grecho"
+elif [[ $PROTOCOL = "tcp" ]]; then
+    APP_SELECTOR="app=tcpecho"
 else
     echo "Error matching protocol to app selector"
     exit_and_fail
@@ -266,6 +275,11 @@ elif [[ $PROTOCOL = "http" ]]; then
     echo "Running HTTP testing script"
 
     $THESIS_REPO_PATH/scripts/run-http-test.sh
+
+elif [[ $PROTOCOL = "tcp" ]]; then
+    echo "Running TCP testing script"
+
+    $THESIS_REPO_PATH/scripts/run-tcp-test.sh
 
 fi
 

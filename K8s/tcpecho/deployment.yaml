@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tcpecho
+  labels:
+    app: tcpecho
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tcpecho
+  template:
+    metadata:
+      labels:
+        app: tcpecho
+    spec:
+      containers:
+        - name: tcpecho
+          image: ghcr.io/emilzackrisson/tcptrafficgenerator:latest
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tcpecho
+spec:
+  selector:
+    app: tcpecho
+  ports:
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+      nodePort: 30003
+  type: NodePort
+  externalTrafficPolicy: Local
