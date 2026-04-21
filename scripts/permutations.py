@@ -10,7 +10,7 @@ if len(sys.argv) != 3:
 SCRIPTPATH = sys.argv[1]
 REPOPATH = sys.argv[2]
 
-lists = [['iptables', 'ebpf'], ['udp', 'http'], ['none', 'ingress', 'egress', 'both'], ['no', 'with', 'withacceleration'], ['true', 'false']]
+lists = [['iptables', 'ebpf'], ['udp', 'http', 'tcp'], ['none', 'ingress', 'egress', 'both'], ['no', 'with', 'withacceleration'], ['true', 'false']]
 permutations = list(product(*lists))
 
 
