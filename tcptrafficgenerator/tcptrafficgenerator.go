@@ -67,7 +67,7 @@ func sendRawMessage(packet_total_size int, dest_addr string, sequence_number int
 	}
 
 	// metadata ascii
-	meta := fmt.Sprintf("%d;%d;%d;%d", expId, runId, keyId, sequence_number)
+	meta := fmt.Sprintf("%d;%d;%d;%d;", expId, runId, keyId, sequence_number)
 	metaBytes := []byte(meta)
 
 	if sequence_number == 0 {
@@ -110,9 +110,16 @@ func sendRawMessage(packet_total_size int, dest_addr string, sequence_number int
 		log.Fatal(err)
 	}
 
-	// read reply and verify
+	// read reply and verify with a 10 second timeout
+	if err := conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
+		log.Printf("SetReadDeadline error: %v", err)
+	}
 	var rlenBuf [4]byte
 	if _, err := io.ReadFull(conn, rlenBuf[:]); err != nil {
+		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
+			log.Printf("Timeout waiting for echoed length for seq %d: %v", sequence_number, err)
+			return
+		}
 		log.Fatal(err)
 	}
 	rlen := binary.BigEndian.Uint32(rlenBuf[:])
@@ -121,6 +128,10 @@ func sendRawMessage(packet_total_size int, dest_addr string, sequence_number int
 	}
 	rbuf := make([]byte, rlen)
 	if _, err := io.ReadFull(conn, rbuf); err != nil {
+		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
+			log.Printf("Timeout waiting for echoed payload for seq %d: %v", sequence_number, err)
+			return
+		}
 		log.Fatal(err)
 	}
 	// optional verify exact content
