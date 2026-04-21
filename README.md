@@ -5,7 +5,11 @@ This repo stores files related to my and Theo Svensson's bachelor thesis work at
 ## Parts
 ### httptrafficgenerator
 
-A simple program that generates http traffic and is designed to work with DPMI (https://github.com/DPMI).
+A simple program that generates HTTP traffic and is designed to work with DPMI (https://github.com/DPMI).
+
+### tcptrafficgenerator
+
+A simple program that generates TCP traffic and is designed to work with DPMI (https://github.com/DPMI).
 
 ### k8s 
 Kubernetes manifests used.

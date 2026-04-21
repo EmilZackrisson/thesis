@@ -51,9 +51,28 @@ func sendRawMessage(packet_total_size int, dest_addr string, sequence_number int
 		payloadLen = 0
 	}
 
+	expId, err := strconv.Atoi(os.Getenv("EXPID"))
+	if err != nil {
+		log.Fatal("Missing EXPID: ", err)
+	}
+
+	runId, err := strconv.Atoi(os.Getenv("RUNID"))
+	if err != nil {
+		log.Fatal("Missing RUNID: ", err)
+	}
+
+	keyId, err := strconv.Atoi(os.Getenv("KEYID"))
+	if err != nil {
+		log.Fatal("Missing KEYID: ", err)
+	}
+
 	// metadata ascii
-	meta := fmt.Sprintf("exp_id=%s;run_id=%s;key_id=%s;counter=%d", os.Getenv("EXPID"), os.Getenv("RUNID"), os.Getenv("KEYID"), sequence_number)
+	meta := fmt.Sprintf("%d;%d;%d;%d", expId, runId, keyId, sequence_number)
 	metaBytes := []byte(meta)
+
+	if sequence_number == 0 {
+		log.Printf("The smallest packet size possible is %d bytes.", len(metaBytes))
+	}
 
 	if len(metaBytes) > payloadLen {
 		log.Printf("Warning: metadata length %d exceeds computed payloadLen %d; metadata will be sent but packet will be smaller than requested", len(metaBytes), payloadLen)
